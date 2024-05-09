@@ -136,6 +136,10 @@ class CustomProfessorTest(TestCase):
         # faculty models need to be implented
         ...
 
+    def test_get_taught_courses(self):
+        # course models need to be implented
+        ...
+
 
 class CustomAssistantTest(TestCase):
     def setUp(self):

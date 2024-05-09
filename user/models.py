@@ -155,6 +155,8 @@ class Professor(models.Model):
     def get_faculty(self):
         return self.field_of_study.faculty_group.faculty
 
+    def get_taught_courses(self): ...
+
     @staticmethod
     def filter_by_faculty(faculty):
         return Professor.objects.filter(field_of_study__faculty_group__faculty=faculty)
