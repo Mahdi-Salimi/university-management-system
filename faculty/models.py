@@ -1,6 +1,13 @@
 from django.db import models
 
 
+# to be moved to utils
+class AcademicLevel(models.TextChoices):
+    BACHELOR = "Bachelor"
+    MASTER = "Master"
+    DOCTORATE = "Doctorate"
+
+
 class Faculty(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -9,43 +16,25 @@ class Faculty(models.Model):
 
 
 class FacultyGroup(models.Model):
-    name = models.CharField(max_length=100)
-    faculty = models.ForeignKey(
-        Faculty,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-    )
+    name = models.CharField(max_length=100, unique=True)
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.faculty.name} - {self.name}"
 
 
-class AcademicLevel(models.Model):
-    name = models.CharField(max_length=100)  # maybe use choices
-    required_units = models.IntegerField()  # required units differ for each faculty
-
-    def __str__(self):
-        return self.name
-
-
 class FieldOfStudy(models.Model):
-    name = models.CharField(max_length=100)
-    faculty_group = models.ForeignKey(
-        FacultyGroup,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-    )
+    name = models.CharField(max_length=100, unique=True)
+    faculty_group = models.ForeignKey(FacultyGroup, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
 
 
 class AcademicField(models.Model):
-    academic_level = models.ForeignKey(AcademicLevel, on_delete=models.CASCADE)
+    academic_level = models.CharField(max_length=10, choices=AcademicLevel.choices)
     field_of_study = models.ForeignKey(FieldOfStudy, on_delete=models.CASCADE)
-    required_units = models.IntegerField()
+    required_units = models.PositiveIntegerField()
 
     def __str__(self):
         return f"{self.academic_level.name} - {self.field_of_study.name}"
