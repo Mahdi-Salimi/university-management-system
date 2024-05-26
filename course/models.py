@@ -120,7 +120,7 @@ class StudentSemester(models.Model):
     semester_count = models.IntegerField()
     
     def __str__(self):
-        return self.student.name + str(self.semester_count)
+        return str(self.student.user) + str(self.semester_count)
     
     
 class ClassSession(models.Model):
