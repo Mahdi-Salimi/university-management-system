@@ -145,4 +145,4 @@ class ClassSession(models.Model):
     
     semester_course = models.ForeignKey(SemesterCourse, on_delete=models.CASCADE)
     day_of_week = models.CharField(max_length=3, choices=DAY_CHOICES)
-    time_block= models.CharField(max_length=3, choices=TIME_BLOCK_CHOICES)
+    time_block= models.CharField(max_length=5, choices=TIME_BLOCK_CHOICES)
