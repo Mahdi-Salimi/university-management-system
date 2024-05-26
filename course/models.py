@@ -113,30 +113,6 @@ class StudentCourse(models.Model):
         return str(self.student) + " - " + str(self.semester_course)
 
 
-class SemesterCourseTimetable(models.Model):
-    semester_course = models.ForeignKey(SemesterCourse, on_delete=models.CASCADE)
-    first_weekday = models.CharField(
-        max_length=1,
-        choices=WeekDayChoices.choices,
-        default=WeekDayChoices.SATURDAY,
-    )
-    first_start_time = models.TimeField()
-    first_end_time = models.TimeField()
-    second_weekday = models.CharField(
-        max_length=1,
-        choices=WeekDayChoices.choices,
-        default=WeekDayChoices.SATURDAY,
-        null=True,
-        blank=True,
-    )
-    second_start_time = models.TimeField(null=True, blank=True)
-    second_end_time = models.TimeField(null=True, blank=True)
-
-    def __str__(self):
-        return str(self.semester_course) + " - " + str(self.first_weekday) + " - " + str(self.first_start_time) + " , " + str(self.first_end_time) \
-                + " - " + (str(self.second_weekday) + " - " + str(self.second_start_time) + " , " + str(self.second_end_time)) if self.second_weekday else ""
-                
-
 class StudentSemester(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
@@ -146,3 +122,27 @@ class StudentSemester(models.Model):
     def __str__(self):
         return self.student.name + str(self.semester_count)
     
+    
+class ClassSession(models.Model):
+    DAY_CHOICES = [
+        ('MON', 'Monday'),
+        ('TUE', 'Tuesday'),
+        ('WED', 'Wednesday'),
+        ('THU', 'Thursday'),
+        ('FRI', 'Friday'),
+        ('SAT', 'Saturday'),
+        ('SUN', 'Sunday'),
+    ]
+    
+    TIME_BLOCK_CHOICES = [
+        ('7_9', '7:00 - 9:00'),
+        ('9_11', '9:00 -11:00'),
+        ('11_13', '11:00 -13:00'),
+        ('13_15', '13:00 -15:00'),
+        ('15_17', '15:00 -17:00'),
+        ('17_19', '17:00 -19:00'),   
+    ]
+    
+    semester_course = models.ForeignKey(SemesterCourse, on_delete=models.CASCADE)
+    day_of_week = models.CharField(max_length=3, choices=DAY_CHOICES)
+    time_block= models.CharField(max_length=3, choices=TIME_BLOCK_CHOICES)
