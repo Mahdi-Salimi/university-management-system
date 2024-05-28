@@ -114,13 +114,21 @@ class StudentCourse(models.Model):
 
 
 class StudentSemester(models.Model):
+    
+    STATUS_CHOICES = [
+        ('PAS', 'Passed'),
+        ('FAI', 'Failed'),
+        ('WDR', 'Withdrawn'),
+        ('UNK', 'Unknown'),
+    ]
+    
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     gpa = models.FloatField()
-    semester_count = models.IntegerField()
+    semester_status = models.CharField(max_length=3, choices=STATUS_CHOICES, default='UNK')
     
     def __str__(self):
-        return str(self.student.user) + str(self.semester_count)
+        return str(self.student.user) + self.semester_status
     
     
 class ClassSession(models.Model):

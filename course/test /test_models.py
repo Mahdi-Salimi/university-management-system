@@ -264,12 +264,12 @@ class StudentSemesterModelTest(TestCase):
             student=self.student,
             semester=self.semester,
             gpa=3.5,
-            semester_count=1,
+            semester_status='UNK',
         )
 
     def test_student_semester_creation(self):
         student_semester = StudentSemester.objects.get(student=self.student)
-        self.assertEqual(str(student_semester), "None1")
+        self.assertEqual(str(student_semester), "NoneUNK")
 
     def test_student_semester_read(self):
         student_semester = StudentSemester.objects.get(student=self.student)
