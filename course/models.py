@@ -116,9 +116,11 @@ class StudentCourse(models.Model):
 class StudentSemester(models.Model):
     
     STATUS_CHOICES = [
+        ('ONG', 'Ongoing'),
         ('PAS', 'Passed'),
         ('FAI', 'Failed'),
-        ('WDR', 'Withdrawn'),
+        ('WWS', 'Withdrawn with Sanavat'),
+        ('WNO', 'Withdrawn No Sanavat'),
         ('UNK', 'Unknown'),
     ]
     
