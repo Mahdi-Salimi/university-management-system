@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Installed Apps
     "rest_framework",
+    "django_filters",
     # Local Apps
     "course",
     "faculty",
