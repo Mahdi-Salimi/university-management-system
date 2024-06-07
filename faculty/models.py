@@ -1,11 +1,5 @@
 from django.db import models
-
-
-# to be moved to utils
-class AcademicLevel(models.TextChoices):
-    BACHELOR = "Bachelor"
-    MASTER = "Master"
-    DOCTORATE = "Doctorate"
+from utils.models.choices import AcademicLevel
 
 
 class Faculty(models.Model):
