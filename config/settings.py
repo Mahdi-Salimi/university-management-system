@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Installed Apps
     "rest_framework",
+    "drf_spectacular",
     # Local Apps
     "course",
     "faculty",
@@ -143,4 +144,15 @@ PERM_GROUPS = {
     "STUDENTS": "Students",
     "PROFESSORS": "Professors",
     "ASSISTANTS": "Assistants",
+}
+
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "UMS API",
+    "DESCRIPTION": "University Management System",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }

@@ -45,7 +45,7 @@ source django-env/bin/activate
 cd samane-golestan
 ```
 
-4. Install the required dependencies using pip:
+4. Install the required dependencies using poetry (recomended) or pip:
 ```shell
 pip install -r requirements.txt
 ```
@@ -81,8 +81,11 @@ python manage.py create_perm_groups
 ```shell
 python manage.py createsuperuser
 ```
-
-9. Start the server:
+9. Generate API document `schema.yml`:
+```shell
+python manage.py spectacular --color --file schema.yml
+```
+10. Start the server:
 ```
 python manage.py runserver
 ```
@@ -103,4 +106,3 @@ Open a terminal window, navigate to your project directory, and run the Celery w
 celery -A golestan worker --loglevel=info
 celery -A golestan beat --loglevel=info
 ```
-
