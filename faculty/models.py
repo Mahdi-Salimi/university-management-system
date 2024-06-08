@@ -31,4 +31,4 @@ class AcademicField(models.Model):
     required_units = models.PositiveIntegerField()
 
     def __str__(self):
-        return f"{self.academic_level.name} - {self.field_of_study.name}"
+        return f"{self.academic_level} - {self.field_of_study.name}"

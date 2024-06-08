@@ -3,9 +3,9 @@ from django.db import models
 
 
 class AcademicLevel(models.TextChoices):
-    BACHELOR = "Bachelor"
-    MASTER = "Master"
-    DOCTORATE = "Doctorate"
+    BACHELOR = "B", "Bachelor"
+    MASTER = "M", "Master"
+    DOCTORATE = "D", "Doctorate"
 
 
 class GenderChoices(models.TextChoices):
