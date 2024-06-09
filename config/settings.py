@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # Installed Apps
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
+    "django_filters",
     "drf_spectacular",
     # Local Apps
     "course",
