@@ -1,11 +1,5 @@
 from django.db import models
-
-
-# to be moved to utils
-class AcademicLevel(models.TextChoices):
-    BACHELOR = "Bachelor"
-    MASTER = "Master"
-    DOCTORATE = "Doctorate"
+from utils.models.choices import AcademicLevel
 
 
 class Faculty(models.Model):
@@ -37,4 +31,4 @@ class AcademicField(models.Model):
     required_units = models.PositiveIntegerField()
 
     def __str__(self):
-        return f"{self.academic_level.name} - {self.field_of_study.name}"
+        return f"{self.academic_level} - {self.field_of_study.name}"
