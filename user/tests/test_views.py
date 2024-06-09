@@ -1,4 +1,6 @@
 import json
+import redis
+from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.core.management import call_command
 from django.test import TestCase
@@ -10,7 +12,9 @@ from rest_framework.test import APIClient
 from user.models import Student
 from course.models import Semester
 from faculty.models import AcademicField, AcademicLevel, Faculty, FacultyGroup, FieldOfStudy
+from utils.auth import change_pass_otp_redis_key_generator
 
+REDIS = settings.REDIS
 User = get_user_model()
 
 
@@ -754,3 +758,139 @@ class StudentAPITestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Student.objects.filter(user__national_id=data["user"]["national_id"]).exists())
         self.assertTrue(User.objects.filter(national_id=data["user"]["national_id"]).exists())
+
+
+class ChangePasswordViewSetTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="user",
+            password="pass",
+            email="test@test.com",
+        )
+        self.redis_client = redis.StrictRedis(host=REDIS["host"], port=REDIS["port"], db=REDIS["db"])
+        self.url_request = reverse_lazy("user:change-pass-request")
+        self.url_verify = reverse_lazy("user:change-pass-verify")
+
+    def test_change_password_request_valid_user(self):
+        data = {"username": self.user.username}
+        response = self.client.post(self.url_request, data=json.dumps(data), content_type="application/json")
+        key = change_pass_otp_redis_key_generator(self.user)
+        stored_otp = self.redis_client.get(key)
+        self.redis_client.delete(key)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), {"message": "Password change request sent successfully"})
+        self.assertIsNotNone(stored_otp)
+
+    def test_change_password_request_invalid_user(self):
+        data = {"username": "invalid_user"}
+        response = self.client.post(self.url_request, data=json.dumps(data), content_type="application/json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.json(), {"error": "User not found!"})
+
+    def test_change_password_request_no_email_associated(self):
+        user = User.objects.create_user(
+            username="user2",
+            password="pass",
+        )
+        data = {"username": user.username}
+        response = self.client.post(self.url_request, data=json.dumps(data), content_type="application/json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.json(), {"error": "No email associated with this user!"})
+
+    def test_change_password_request_valid_user_authenticated(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(self.url_request, content_type="application/json")
+        self.client.logout()
+        key = change_pass_otp_redis_key_generator(self.user)
+        stored_otp = self.redis_client.get(key)
+        self.redis_client.delete(key)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), {"message": "Password change request sent successfully"})
+        self.assertIsNotNone(stored_otp)
+
+    def test_change_password_request_no_email_associated_authenticated(self):
+        user = User.objects.create_user(
+            username="user2",
+            password="pass",
+        )
+        self.client.force_authenticate(user=user)
+        response = self.client.post(self.url_request, content_type="application/json")
+        self.client.logout()
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.json(), {"error": "No email associated with this user!"})
+
+    def test_change_password_request_authenticated_ignores_username(self):
+        self.client.force_authenticate(user=self.user)
+        user = User.objects.create_user(username="user2", password="pass", email="email@email.com")
+        data = {"username": user.username}
+        response = self.client.post(self.url_request, data=json.dumps(data), content_type="application/json")
+        self.client.logout()
+        key = change_pass_otp_redis_key_generator(self.user)
+        stored_otp = self.redis_client.get(key)
+        self.redis_client.delete(key)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(stored_otp)
+        key = change_pass_otp_redis_key_generator(user)
+        stored_otp = self.redis_client.get(key)
+        self.assertIsNone(stored_otp)
+
+    def test_change_password_verify_successful_verification(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(self.url_request, content_type="application/json")
+        key = change_pass_otp_redis_key_generator(self.user)
+        stored_otp = self.redis_client.get(key)
+        data = {"new_password": "Pa$$word123", "confirm_new_password": "Pa$$word123", "otp": stored_otp.decode("utf-8")}
+        response = self.client.post(self.url_verify, data=json.dumps(data), content_type="application/json")
+        self.client.logout()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), ["Password changed successfully."])
+
+    def test_change_password_verify_invalid_otp(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(self.url_request, content_type="application/json")
+        data = {"new_password": "Pa$$word123", "confirm_new_password": "Pa$$word123", "otp": "wrong"}
+        response = self.client.post(self.url_verify, data=json.dumps(data), content_type="application/json")
+        self.client.logout()
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"error": "OTP expired or invalid"})
+
+    def test_change_password_verify_missing_otp(self):
+        self.client.force_authenticate(user=self.user)
+        data = {"new_password": "Pa$$word123", "confirm_new_password": "Pa$$word123"}
+        response = self.client.post(self.url_verify, data=json.dumps(data), content_type="application/json")
+        self.client.logout()
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("otp", response.json().keys())
+
+    def test_change_password_verify_missing_user(self):
+        data = {"new_password": "Pa$$word123", "confirm_new_password": "Pa$$word123"}
+        response = self.client.post(self.url_verify, data=json.dumps(data), content_type="application/json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.json(), {"error": "Pleae enter your username!"})
+
+    def test_change_password_verify_pass_mismatch_verification(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(self.url_request, content_type="application/json")
+        key = change_pass_otp_redis_key_generator(self.user)
+        stored_otp = self.redis_client.get(key)
+        data = {"new_password": "Pa$$word12", "confirm_new_password": "Pa$$word123", "otp": stored_otp.decode("utf-8")}
+        response = self.client.post(self.url_verify, data=json.dumps(data), content_type="application/json")
+        self.client.logout()
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"non_field_errors": ["Passwords doesn't match."]})
+
+    def test_change_password_verify_pass_policy_verification(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(self.url_request, content_type="application/json")
+        key = change_pass_otp_redis_key_generator(self.user)
+        stored_otp = self.redis_client.get(key)
+        data = {"new_password": "pass", "confirm_new_password": "pass", "otp": stored_otp.decode("utf-8")}
+        response = self.client.post(self.url_verify, data=json.dumps(data), content_type="application/json")
+        self.client.logout()
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("non_field_errors", response.json())
+
+    def test_change_password_verify_invalid_method(self):
+        response = self.client.get(self.url_request, content_type="application/json")
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

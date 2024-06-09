@@ -3,10 +3,13 @@ from django.contrib.auth.models import Permission
 from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
+from rest_framework import serializers
 from rest_framework.test import APIRequestFactory
 from user.models import Assistant, Professor, Student
 from user.serializers import (
     AssistantSerializer,
+    ChangePasswordRequestSerializer,
+    ChangePasswordVerifySerializer,
     ProfessorSerializer,
     StudentSerializer,
     UserSerializer,
@@ -422,3 +425,69 @@ class TestAssistantSerializers(TestCase):
         )
         self.assertFalse(serializer.is_valid())
         self.assertIn("user", serializer.errors)
+
+
+class TestChangePasswordRequestSerializer(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(
+            username="request_user",
+            password="pass",
+        )
+
+    def test_change_password(self):
+        serializer = ChangePasswordRequestSerializer(
+            data={"username": self.user.username},
+        )
+        self.assertTrue(serializer.is_valid())
+
+
+class TestChangePasswordVerifySerializer(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(
+            username="request_user",
+            password="pass",
+        )
+
+    def test_change_password(self):
+        new_pass = "Pa$$word123"
+        data = {
+            "username": self.user.username,
+            "new_password": new_pass,
+            "confirm_new_password": new_pass,
+            "otp": "nothing",
+        }
+        serializer = ChangePasswordVerifySerializer(
+            data=data,
+        )
+        self.assertTrue(serializer.is_valid())
+        self.user = serializer.change_password(self.user)
+        self.assertTrue(self.user.check_password(new_pass))
+
+    def test_change_invalid_password(self):
+        new_pass = "Pass"
+        data = {
+            "username": self.user.username,
+            "new_password": new_pass,
+            "confirm_new_password": new_pass,
+            "otp": "nothing",
+        }
+        serializer = ChangePasswordVerifySerializer(
+            data=data,
+        )
+        self.assertRaises(AssertionError, serializer.change_password, user=self.user)
+        self.assertRaises(serializers.ValidationError, serializer.is_valid, raise_exception=True)
+        self.assertRaises(AssertionError, serializer.change_password, user=self.user)
+
+    def test_change_no_match_password(self):
+        new_pass = "Pass"
+        data = {
+            "username": self.user.username,
+            "new_password": new_pass,
+            "confirm_new_password": new_pass + "s",
+            "otp": "nothing",
+        }
+        serializer = ChangePasswordVerifySerializer(
+            data=data,
+        )
+        self.assertRaises(serializers.ValidationError, serializer.is_valid, raise_exception=True)
+        self.assertRaises(AssertionError, serializer.change_password, user=self.user)

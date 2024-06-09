@@ -11,6 +11,7 @@ router.register(r"professors", views.ProfessorViewSet, basename="professor")
 router.register(r"admin/assistants", views.AssistantViewSet, basename="admin-assistant")
 router.register(r"admin/students", views.StudentViewSet, basename="admin-student")
 router.register(r"admin/professors", views.ProfessorViewSet, basename="admin-professors")
+router.register(r"users", views.ChangePasswordViewSet, basename="change-pass")
 urlpatterns = [
     path("login/", views.LoginAPIView.as_view(), name="login"),
     path("logout/", views.LogoutAPIView.as_view(), name="logout"),

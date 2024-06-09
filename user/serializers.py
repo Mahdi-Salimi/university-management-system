@@ -1,7 +1,9 @@
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.authentication import get_user_model
 from user.models import Student, Professor, Assistant
 from utils.models.choices import StudentStatusChoices
+from django.core import exceptions
 
 User = get_user_model()
 
@@ -156,3 +158,44 @@ class AssistantSerializer(CustomModelSerializer):
             "faculty",
         ]
         read_only_fields = ["id"]
+
+
+class UserPasswordSerializerField(serializers.CharField):
+    def __init__(self, **kwargs):
+        kwargs["style"] = {"input_type": "password"}
+        kwargs["write_only"] = True
+        super().__init__(**kwargs)
+
+    def validate(self, value):
+        try:
+            validate_password(value)
+        except exceptions.ValidationError as e:
+            raise serializers.ValidationError(e.messages)
+
+        return value
+
+
+class ChangePasswordRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(required=False)
+
+
+class ChangePasswordVerifySerializer(ChangePasswordRequestSerializer):
+    new_password = UserPasswordSerializerField()
+    confirm_new_password = UserPasswordSerializerField()
+    otp = serializers.CharField(write_only=True, style={"input_type": "password"})
+
+    def validate(self, data):
+        if data.get("new_password") != data.get("confirm_new_password"):
+            raise serializers.ValidationError("Passwords doesn't match.")
+        for field_name in ["new_password", "confirm_new_password"]:
+            self.fields[field_name].validate(data[field_name])
+
+        return data
+
+    def change_password(self, user):
+        assert hasattr(self, "_errors"), "You must call `.is_valid()` before calling `.change_password`."
+        assert not self.errors, "You cannot call `.change_password` on a serializer with invalid data."
+        new_password = self.validated_data["new_password"]
+        user.set_password(new_password)
+        user.save()
+        return user

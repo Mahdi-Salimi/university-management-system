@@ -137,6 +137,6 @@ pip install celery
 
 Open a terminal window, navigate to your project directory, and run the Celery worker using the celery command:
 ```
-celery -A golestan worker --loglevel=info
-celery -A golestan beat --loglevel=info
+celery -A config worker --loglevel=info
+celery -A config beat --loglevel=info
 ```
