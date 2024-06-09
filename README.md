@@ -46,10 +46,44 @@ cd samane-golestan
 ```
 
 4. Install the required dependencies using poetry (recomended) or pip:
+
+### Installing Dependencies
+
+#### Using `pip`
+To install the required dependencies using `pip`, you can use the following command:
+
 ```shell
 pip install -r requirements.txt
 ```
 
+This command reads the `requirements.txt` file and installs all the packages listed in it.
+
+#### Using `Poetry`
+Poetry is a modern dependency management tool for Python that helps you manage your project’s dependencies and environment in a more structured way. Here’s how to install and use Poetry to install your dependencies:
+
+1. **Install Poetry**:
+   First, you need to install Poetry. You can do this by running the following command:
+
+   ```shell
+   curl -sSL https://install.python-poetry.org | python3 -
+   ```
+
+   Alternatively, if you have `pip` installed, you can install Poetry using `pip`:
+
+   ```shell
+   pip install poetry
+   ```
+
+2. **Install Dependencies**:
+   Install dependencies using:
+
+   ```shell
+   poetry install
+   ```
+
+   This command will create a virtual environment for your project (if it doesn’t already exist) and install all the dependencies specified in your `pyproject.toml` file.
+
+By using Poetry, you benefit from a more modern and robust dependency management system that can help you maintain a clean and manageable project environment.
 
 5. Make a copy of `.env_sample` and rename it to `.env` and edit the configuration as needed.
 ```env
