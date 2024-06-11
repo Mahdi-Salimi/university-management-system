@@ -3,7 +3,14 @@ from django.utils import timezone
 
 from faculty.models import AcademicField, Faculty
 from user.models import Professor, Student
-from utils.models.choices import AcademicSemesterChoices, CourseTypeChoices, grade_validatior, UnitTypeChoices, StudentCourseStatusChoices, WeekDayChoices
+from utils.models.choices import (
+    AcademicSemesterChoices,
+    CourseTypeChoices,
+    grade_validatior,
+    UnitTypeChoices,
+    StudentCourseStatusChoices,
+)
+
 
 class Course(models.Model):
     name = models.CharField(max_length=50)
@@ -15,28 +22,26 @@ class Course(models.Model):
         blank=True,
         null=True,
     )
-    prerequisites = models.ManyToManyField('self', symmetrical=False, related_name='prerequisite_of', blank=True)
-    corequisites = models.ManyToManyField('self', symmetrical=False, related_name='corequisite_of', blank=True)
+    prerequisites = models.ManyToManyField("self", symmetrical=False, related_name="prerequisite_of", blank=True)
+    corequisites = models.ManyToManyField("self", symmetrical=False, related_name="corequisite_of", blank=True)
     course_unit = models.IntegerField()
     unit_type = models.CharField(
         max_length=1,
         choices=UnitTypeChoices.choices,
         default=UnitTypeChoices.Theory,
     )
-    professors = models.ManyToManyField(Professor, related_name='teaching_courses', blank=True)
-    
+    professors = models.ManyToManyField(Professor, related_name="teaching_courses", blank=True)
+
     def course_status(self):
         if self.professors.exists():
             return "available"
         else:
             return "Not available"
 
-
     def __str__(self):
-        return self.name + '_' + self.code
-    
-    
-    
+        return self.name + "_" + self.code
+
+
 class Semester(models.Model):
     academic_year = models.IntegerField()
     academic_semester = models.CharField(
@@ -62,11 +67,9 @@ class Semester(models.Model):
 
     @classmethod
     def get_current_semester(cls):
-        return Semester.objects.filter(start_course_registration__lte=timezone.now(),
-                                       end_course_registration__gte=timezone.now()).first()
-
-
-
+        return Semester.objects.filter(
+            start_course_registration__lte=timezone.now(), end_course_registration__gte=timezone.now()
+        ).first()
 
 
 class CourseType(models.Model):
@@ -106,7 +109,9 @@ class StudentCourse(models.Model):
         choices=StudentCourseStatusChoices.choices,
         default=StudentCourseStatusChoices.NOTTAKEN,
     )
-    student_grade = models.DecimalField(decimal_places=2, max_digits=5, validators=(grade_validatior,), null=True, blank=True)
+    student_grade = models.DecimalField(
+        decimal_places=2, max_digits=5, validators=(grade_validatior,), null=True, blank=True
+    )
     semester_course = models.ForeignKey(SemesterCourse, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -114,45 +119,44 @@ class StudentCourse(models.Model):
 
 
 class StudentSemester(models.Model):
-    
     STATUS_CHOICES = [
-        ('ONG', 'Ongoing'),
-        ('PAS', 'Passed'),
-        ('FAI', 'Failed'),
-        ('WWS', 'Withdrawn with Sanavat'),
-        ('WNO', 'Withdrawn No Sanavat'),
-        ('UNK', 'Unknown'),
+        ("ONG", "Ongoing"),
+        ("PAS", "Passed"),
+        ("FAI", "Failed"),
+        ("WWS", "Withdrawn with Sanavat"),
+        ("WNO", "Withdrawn No Sanavat"),
+        ("UNK", "Unknown"),
     ]
-    
+
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     gpa = models.FloatField()
-    semester_status = models.CharField(max_length=3, choices=STATUS_CHOICES, default='UNK')
-    
+    semester_status = models.CharField(max_length=3, choices=STATUS_CHOICES, default="UNK")
+
     def __str__(self):
         return str(self.student.user) + self.semester_status
-    
-    
+
+
 class ClassSession(models.Model):
     DAY_CHOICES = [
-        ('MON', 'Monday'),
-        ('TUE', 'Tuesday'),
-        ('WED', 'Wednesday'),
-        ('THU', 'Thursday'),
-        ('FRI', 'Friday'),
-        ('SAT', 'Saturday'),
-        ('SUN', 'Sunday'),
+        ("MON", "Monday"),
+        ("TUE", "Tuesday"),
+        ("WED", "Wednesday"),
+        ("THU", "Thursday"),
+        ("FRI", "Friday"),
+        ("SAT", "Saturday"),
+        ("SUN", "Sunday"),
     ]
-    
+
     TIME_BLOCK_CHOICES = [
-        ('7_9', '7:00 - 9:00'),
-        ('9_11', '9:00 -11:00'),
-        ('11_13', '11:00 -13:00'),
-        ('13_15', '13:00 -15:00'),
-        ('15_17', '15:00 -17:00'),
-        ('17_19', '17:00 -19:00'),   
+        ("7_9", "7:00 - 9:00"),
+        ("9_11", "9:00 -11:00"),
+        ("11_13", "11:00 -13:00"),
+        ("13_15", "13:00 -15:00"),
+        ("15_17", "15:00 -17:00"),
+        ("17_19", "17:00 -19:00"),
     ]
-    
+
     semester_course = models.ForeignKey(SemesterCourse, on_delete=models.CASCADE)
     day_of_week = models.CharField(max_length=3, choices=DAY_CHOICES)
-    time_block= models.CharField(max_length=5, choices=TIME_BLOCK_CHOICES)
+    time_block = models.CharField(max_length=5, choices=TIME_BLOCK_CHOICES)
