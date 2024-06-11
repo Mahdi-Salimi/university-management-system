@@ -2,33 +2,38 @@ from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework.exceptions import ValidationError
-from ..models import *
-from faculty.models import *
-from ..serializers import *
-
-from django.test import TestCase
-from django.utils import timezone
-from datetime import timedelta
-from rest_framework.exceptions import ValidationError
-from faculty.models import Faculty, FacultyGroup
+from faculty.models import Faculty, FacultyGroup, FieldOfStudy
 from user.models import Professor, Student
-from ..models import (
-    Course, Semester, SemesterCourse, StudentCourse, 
-    StudentSemester, CourseType, ClassSession, AcademicField
+from course.models import (
+    Course,
+    Semester,
+    SemesterCourse,
+    StudentCourse,
+    StudentSemester,
+    CourseType,
+    ClassSession,
+    AcademicField,
 )
-from ..serializers import (
-    CourseSerializer, SemesterSerializer, SemesterCourseSerializer,
-    StudentCourseSerializer, StudentSemesterSerializer, CourseTypeSerializer, ClassSessionSerializer
+from course.serializers import (
+    CourseSerializer,
+    SemesterSerializer,
+    SemesterCourseSerializer,
+    StudentCourseSerializer,
+    StudentSemesterSerializer,
+    CourseTypeSerializer,
+    ClassSessionSerializer,
 )
 from utils.models.choices import AcademicSemesterChoices, CourseTypeChoices, UnitTypeChoices
 
-class SerializerTestCase(TestCase):
 
+class SerializerTestCase(TestCase):
     def setUp(self):
-        self.faculty = Faculty.objects.create(name='civil')
-        self.faculty_group = FacultyGroup.objects.create(name='environment', faculty=self.faculty)
-        self.field_of_study = FieldOfStudy.objects.create(name='civil', faculty_group=self.faculty_group)
-        self.academic_field = AcademicField.objects.create(academic_level='Bachelor', field_of_study=self.field_of_study, required_units=146)
+        self.faculty = Faculty.objects.create(name="civil")
+        self.faculty_group = FacultyGroup.objects.create(name="environment", faculty=self.faculty)
+        self.field_of_study = FieldOfStudy.objects.create(name="civil", faculty_group=self.faculty_group)
+        self.academic_field = AcademicField.objects.create(
+            academic_level="Bachelor", field_of_study=self.field_of_study, required_units=146
+        )
         self.course = Course.objects.create(
             name="Test Course",
             code="TC101",
@@ -72,7 +77,7 @@ class SerializerTestCase(TestCase):
             student=self.student,
             semester=self.semester,
             gpa=3.5,
-            semester_status='ONG',
+            semester_status="ONG",
         )
         self.class_session = ClassSession.objects.create(
             semester_course=self.semester_course,
@@ -138,7 +143,7 @@ class SerializerTestCase(TestCase):
             "exam_date_time": timezone.now() + timedelta(days=95),
             "exam_place": "Room 102",
             "course_capacity": 30,
-            "professor": self.professor.id
+            "professor": self.professor.id,
         }
         serializer = SemesterCourseSerializer(data=data)
         self.assertTrue(serializer.is_valid())
@@ -152,7 +157,7 @@ class SerializerTestCase(TestCase):
             "exam_date_time": timezone.now() - timedelta(days=5),
             "exam_place": "Room 102",
             "course_capacity": 30,
-            "professor": self.professor.id
+            "professor": self.professor.id,
         }
         serializer = SemesterCourseSerializer(data=data)
         self.assertFalse(serializer.is_valid())

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+from datetime import timedelta
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -44,7 +45,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Installed Apps
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "django_filters",
+    "drf_spectacular",
     # Local Apps
     "course",
     "faculty",
@@ -146,8 +149,30 @@ PERM_GROUPS = {
     "ASSISTANTS": "Assistants",
 }
 
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': [
-#         'rest_framework.authentication.SessionAuthentication',
-#     ],
-# }
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "UMS API",
+    "DESCRIPTION": "University Management System",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+REDIS = {
+    "host": os.getenv("REDIS_HOST"),
+    "port": os.getenv("REDIS_PORT"),
+    "db": os.getenv("REDIS_DB"),
+}
+
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")

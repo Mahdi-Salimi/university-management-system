@@ -6,8 +6,8 @@ from faculty.models import Faculty, AcademicField, FieldOfStudy, FacultyGroup
 from user.models import Professor, Student
 from utils.models.choices import AcademicSemesterChoices, CourseTypeChoices, StudentCourseStatusChoices, UnitTypeChoices
 
-class CourseModelTest(TestCase):
 
+class CourseModelTest(TestCase):
     def setUp(self):
         self.faculty = Faculty.objects.create(name="Engineering")
         self.professor = Professor.objects.create()
@@ -47,7 +47,6 @@ class CourseModelTest(TestCase):
 
 
 class SemesterModelTest(TestCase):
-
     def setUp(self):
         self.semester = Semester.objects.create(
             academic_year=2023,
@@ -92,7 +91,6 @@ class SemesterModelTest(TestCase):
 
 
 class CourseTypeModelTest(TestCase):
-
     def setUp(self):
         self.course = Course.objects.create(
             name="Test Course",
@@ -101,10 +99,12 @@ class CourseTypeModelTest(TestCase):
             course_unit=3,
             unit_type=UnitTypeChoices.Theory,
         )
-        self.faculty = Faculty.objects.create(name = 'civil')
-        self.faculty_group = FacultyGroup.objects.create(name = 'environment', faculty = self.faculty)
-        self.field_of_study= FieldOfStudy.objects.create(name = 'civil', faculty_group = self.faculty_group)
-        self.academic_field = AcademicField.objects.create(academic_level= 'Bachelor', field_of_study=self.field_of_study, required_units = 146)
+        self.faculty = Faculty.objects.create(name="civil")
+        self.faculty_group = FacultyGroup.objects.create(name="environment", faculty=self.faculty)
+        self.field_of_study = FieldOfStudy.objects.create(name="civil", faculty_group=self.faculty_group)
+        self.academic_field = AcademicField.objects.create(
+            academic_level="Bachelor", field_of_study=self.field_of_study, required_units=146
+        )
         self.course_type = CourseType.objects.create(
             course_type=CourseTypeChoices.GENERAL,
             course=self.course,
@@ -118,7 +118,10 @@ class CourseTypeModelTest(TestCase):
 
     def test_course_type_read(self):
         course_type = CourseType.objects.get(course=self.course)
-        self.assertEqual(f'{course_type.academic_field.academic_level} - {course_type.academic_field.field_of_study}', "Bachelor - civil")
+        self.assertEqual(
+            f"{course_type.academic_field.academic_level} - {course_type.academic_field.field_of_study}",
+            "Bachelor - civil",
+        )
 
     def test_course_type_update(self):
         self.course_type.course_type = CourseTypeChoices.GENERAL
@@ -133,7 +136,6 @@ class CourseTypeModelTest(TestCase):
 
 
 class SemesterCourseModelTest(TestCase):
-
     def setUp(self):
         self.course = Course.objects.create(
             name="Test Course",
@@ -186,7 +188,6 @@ class SemesterCourseModelTest(TestCase):
 
 
 class StudentCourseModelTest(TestCase):
-
     def setUp(self):
         self.student = Student.objects.create()
         self.course = Course.objects.create(
@@ -244,7 +245,6 @@ class StudentCourseModelTest(TestCase):
 
 
 class StudentSemesterModelTest(TestCase):
-
     def setUp(self):
         self.student = Student.objects.create()
         self.semester = Semester.objects.create(
@@ -264,7 +264,7 @@ class StudentSemesterModelTest(TestCase):
             student=self.student,
             semester=self.semester,
             gpa=3.5,
-            semester_status='UNK',
+            semester_status="UNK",
         )
 
     def test_student_semester_creation(self):
@@ -288,7 +288,6 @@ class StudentSemesterModelTest(TestCase):
 
 
 class ClassSessionModelTest(TestCase):
-
     def setUp(self):
         self.course = Course.objects.create(
             name="Test Course",
@@ -320,24 +319,24 @@ class ClassSessionModelTest(TestCase):
         )
         self.class_session = ClassSession.objects.create(
             semester_course=self.semester_course,
-            day_of_week='MON',
-            time_block='7_9',
+            day_of_week="MON",
+            time_block="7_9",
         )
 
     def test_class_session_creation(self):
         class_session = ClassSession.objects.get(semester_course=self.semester_course)
-        self.assertEqual(class_session.day_of_week, 'MON')
-        self.assertEqual(class_session.time_block, '7_9')
+        self.assertEqual(class_session.day_of_week, "MON")
+        self.assertEqual(class_session.time_block, "7_9")
 
     def test_class_session_read(self):
         class_session = ClassSession.objects.get(semester_course=self.semester_course)
-        self.assertEqual(class_session.day_of_week, 'MON')
+        self.assertEqual(class_session.day_of_week, "MON")
 
     def test_class_session_update(self):
-        self.class_session.day_of_week = 'TUE'
+        self.class_session.day_of_week = "TUE"
         self.class_session.save()
         updated_class_session = ClassSession.objects.get(pk=self.class_session.pk)
-        self.assertEqual(updated_class_session.day_of_week, 'TUE')
+        self.assertEqual(updated_class_session.day_of_week, "TUE")
 
     def test_class_session_delete(self):
         self.class_session.delete()
