@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Installed Apps
     "rest_framework",
+    "django_filters",
     # Local Apps
     "course",
     "faculty",
@@ -144,3 +145,9 @@ PERM_GROUPS = {
     "PROFESSORS": "Professors",
     "ASSISTANTS": "Assistants",
 }
+
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': [
+#         'rest_framework.authentication.SessionAuthentication',
+#     ],
+# }
