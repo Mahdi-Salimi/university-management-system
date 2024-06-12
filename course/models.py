@@ -1,8 +1,5 @@
 from django.db import models
 from django.utils import timezone
-
-from faculty.models import AcademicField, Faculty
-from user.models import Professor, Student
 from utils.models.choices import (
     AcademicSemesterChoices,
     CourseTypeChoices,
@@ -17,7 +14,7 @@ class Course(models.Model):
     code = models.CharField(max_length=20, unique=True)
     description = models.TextField()
     faculty = models.ForeignKey(
-        Faculty,
+        "faculty.Faculty",
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
@@ -30,7 +27,7 @@ class Course(models.Model):
         choices=UnitTypeChoices.choices,
         default=UnitTypeChoices.Theory,
     )
-    professors = models.ManyToManyField(Professor, related_name="teaching_courses", blank=True)
+    # professors = models.ManyToManyField("user.Professor", related_name="teaching_courses", blank=True)
 
     def course_status(self):
         if self.professors.exists():
@@ -40,6 +37,44 @@ class Course(models.Model):
 
     def __str__(self):
         return self.name + "_" + self.code
+
+    @classmethod
+    def get_student_courses(cls, student) -> models.QuerySet["Course"]:
+        return cls.objects.filter(
+            semestercourse__studentcourse__student=student,
+        )
+
+    @classmethod
+    def get_student_passed_courses(cls, student) -> models.QuerySet["Course"]:
+        return cls.get_student_courses(student).filter(
+            semestercourse__studentcourse__course_status=StudentCourseStatusChoices.PASSED
+        )
+
+    @classmethod
+    def get_student_failed_courses(cls, student) -> models.QuerySet["Course"]:
+        return cls.get_student_courses(student).filter(
+            semestercourse__studentcourse__course_status=StudentCourseStatusChoices.FAILED
+        )
+
+    @classmethod
+    def get_student_gpa_courses(cls, student) -> models.QuerySet["Course"]:
+        return cls.get_student_courses(student).filter(
+            semestercourse__studentcourse__course_status__in=(
+                StudentCourseStatusChoices.PASSED,
+                StudentCourseStatusChoices.FAILED,
+            )
+        )
+
+    @classmethod
+    def get_student_current_courses(cls, student) -> models.QuerySet["Course"]:
+        return cls.objects.filter(
+            semestercourse__studentcourse__student=student,
+            semestercourse__studentcourse__course_status=StudentCourseStatusChoices.STUDYING,
+        )
+
+    @classmethod
+    def get_professor_courses(cls, professor) -> models.QuerySet["Course"]:
+        return cls.objects.filter(semestercourse__professor=professor)
 
 
 class Semester(models.Model):
@@ -62,14 +97,15 @@ class Semester(models.Model):
     def __str__(self):
         return str(self.academic_year) + " " + self.get_academic_semester_display()
 
-    def get_semester_code(self):
+    def get_semester_code(self) -> str:
         return str(self.academic_year)[-2:] + self.academic_semester
 
     @classmethod
     def get_current_semester(cls):
-        return Semester.objects.filter(
-            start_course_registration__lte=timezone.now(), end_course_registration__gte=timezone.now()
-        ).first()
+        return cls.objects.get(
+            start_course_registration__lte=timezone.now(),
+            end_course_registration__gte=timezone.now(),
+        )
 
 
 class CourseType(models.Model):
@@ -79,7 +115,7 @@ class CourseType(models.Model):
         default=CourseTypeChoices.GENERAL,
     )
     course = models.ForeignKey(to=Course, on_delete=models.CASCADE)
-    academic_field = models.ForeignKey(to=AcademicField, on_delete=models.CASCADE)
+    academic_field = models.ForeignKey(to="faculty.AcademicField", on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.course} - {self.academic_field}"
@@ -92,7 +128,7 @@ class SemesterCourse(models.Model):
     exam_place = models.CharField(max_length=30)
     course_capacity = models.IntegerField()
     professor = models.ForeignKey(
-        Professor,
+        "user.Professor",
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
@@ -103,7 +139,7 @@ class SemesterCourse(models.Model):
 
 
 class StudentCourse(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    student = models.ForeignKey("user.Student", on_delete=models.CASCADE)
     course_status = models.CharField(
         max_length=1,
         choices=StudentCourseStatusChoices.choices,
@@ -117,24 +153,42 @@ class StudentCourse(models.Model):
     def __str__(self):
         return str(self.student) + " - " + str(self.semester_course)
 
+    @classmethod
+    def get_gpa_student_courses(cls, student) -> models.QuerySet["StudentCourse"]:
+        return cls.objects.filter(
+            student=student, course_status=(StudentCourseStatusChoices.PASSED, StudentCourseStatusChoices.FAILED)
+        )
+
 
 class StudentSemester(models.Model):
-    STATUS_CHOICES = [
-        ("ONG", "Ongoing"),
-        ("PAS", "Passed"),
-        ("FAI", "Failed"),
-        ("WWS", "Withdrawn with Sanavat"),
-        ("WNO", "Withdrawn No Sanavat"),
-        ("UNK", "Unknown"),
-    ]
+    class StatusChoices(models.TextChoices):
+        ONGOING = "ONG", "Ongoing"
+        PASSED = "PAS", "Passed"
+        FAILED = "FAI", "Failed"
+        WWS = "WWS", "Withdrawn with Sanavat"
+        WNO = "WNO", "Withdrawn No Sanavat"
+        UNKNOWN = "UNK", "Unknown"
 
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    student = models.ForeignKey("user.Student", on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     gpa = models.FloatField()
-    semester_status = models.CharField(max_length=3, choices=STATUS_CHOICES, default="UNK")
+    semester_status = models.CharField(max_length=3, choices=StatusChoices.choices, default=StatusChoices.ONGOING)
 
     def __str__(self):
         return str(self.student.user) + self.semester_status
+
+    @classmethod
+    def get_no_of_used_half_years(cls, student) -> int:
+        return len(
+            cls.objects.exclude(semester__academic_semester=AcademicSemesterChoices.SUMMER).filter(
+                student=student,
+                semester_status__in=(
+                    cls.StatusChoices.PASSED,
+                    cls.StatusChoices.FAILED,
+                    cls.StatusChoices.WWS,
+                ),
+            )
+        )
 
 
 class ClassSession(models.Model):

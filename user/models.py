@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from rest_framework.authentication import get_user_model
+from course.models import StudentSemester
 from user.validators import phone_validator, national_id_validator
 from utils.models.choices import (
     GenderChoices,
@@ -112,13 +113,14 @@ class Student(models.Model):
     def get_faculty(self):
         return self.academic_field.field_of_study.faculty_group.faculty
 
-    def get_passed_courses(self): ...
+    def get_remaining_half_years(self):
+        return self.allowed_half_years - StudentSemester.get_no_of_used_half_years(self)
 
-    def get_current_courses(self): ...
+    def calc_gpa(self): ...
 
-    @staticmethod
-    def filter_by_faculty(faculty):
-        return Student.objects.filter(academic_field__field_of_study__faculty_group__faculty=faculty)
+    @classmethod
+    def filter_by_faculty(cls, faculty):
+        return cls.objects.filter(academic_field__field_of_study__faculty_group__faculty=faculty)
 
 
 class Professor(models.Model):
@@ -155,11 +157,9 @@ class Professor(models.Model):
     def get_faculty(self):
         return self.field_of_study.faculty_group.faculty
 
-    def get_taught_courses(self): ...
-
-    @staticmethod
-    def filter_by_faculty(faculty):
-        return Professor.objects.filter(field_of_study__faculty_group__faculty=faculty)
+    @classmethod
+    def filter_by_faculty(cls, faculty):
+        return cls.objects.filter(field_of_study__faculty_group__faculty=faculty)
 
 
 class Assistant(models.Model):
