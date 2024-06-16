@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import F, ExpressionWrapper, DecimalField, Sum
 from django.utils import timezone
 from utils.models.choices import (
     AcademicSemesterChoices,
@@ -29,11 +30,11 @@ class Course(models.Model):
     )
     # professors = models.ManyToManyField("user.Professor", related_name="teaching_courses", blank=True)
 
-    def course_status(self):
-        if self.professors.exists():
-            return "available"
-        else:
-            return "Not available"
+    # def course_status(self):
+    #     if self.professors.exists():
+    #         return "available"
+    #     else:
+    #         return "Not available"
 
     def __str__(self):
         return self.name + "_" + self.code
@@ -104,7 +105,7 @@ class Semester(models.Model):
     def get_current_semester(cls):
         return cls.objects.get(
             start_course_registration__lte=timezone.now(),
-            end_course_registration__gte=timezone.now(),
+            end_semester_date__gte=timezone.now(),
         )
 
 
@@ -156,7 +157,7 @@ class StudentCourse(models.Model):
     @classmethod
     def get_gpa_student_courses(cls, student) -> models.QuerySet["StudentCourse"]:
         return cls.objects.filter(
-            student=student, course_status=(StudentCourseStatusChoices.PASSED, StudentCourseStatusChoices.FAILED)
+            student=student, course_status__in=(StudentCourseStatusChoices.PASSED, StudentCourseStatusChoices.FAILED)
         )
 
 
@@ -189,6 +190,31 @@ class StudentSemester(models.Model):
                 ),
             )
         )
+
+    @classmethod
+    def __calculate_gpa(cls, queryset):  # calculate gpa from queryset
+        queryset = queryset.annotate(num_unit=F("semester_course__course__course_unit"))
+        queryset = queryset.annotate(
+            total_value=ExpressionWrapper(
+                F("student_grade") * F("num_unit"),
+                output_field=DecimalField(max_digits=5, decimal_places=2),
+            )
+        )
+        queryset = queryset.aggregate(sum_value=Sum("total_value"), sum_units=Sum("num_unit"))
+        total_units = queryset["sum_units"]
+        total_values = queryset["sum_value"]
+        gpa = total_values / total_units if total_units else 0
+        return gpa
+
+    def get_semester_gpa(self):
+        queryset = StudentCourse.get_gpa_student_courses(student=self.student)
+        queryset = queryset.filter(semester_course__semester=self.semester)
+        return StudentSemester.__calculate_gpa(queryset)
+
+    @classmethod
+    def get_total_gpa(cls, student):
+        queryset = StudentCourse.get_gpa_student_courses(student=student)
+        return StudentSemester.__calculate_gpa(queryset)
 
 
 class ClassSession(models.Model):

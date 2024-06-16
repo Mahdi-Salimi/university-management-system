@@ -4,7 +4,7 @@ from .models import Course, Semester, CourseType, SemesterCourse, StudentCourse,
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("name", "code", "faculty", "course_unit", "unit_type", "course_status")
+    list_display = ("name", "code", "faculty", "course_unit", "unit_type")
     search_fields = ("name", "code")
     list_filter = ("faculty", "unit_type")
 
@@ -39,7 +39,7 @@ class StudentCourseAdmin(admin.ModelAdmin):
 
 @admin.register(StudentSemester)
 class StudentSemesterAdmin(admin.ModelAdmin):
-    list_display = ("student", "semester", "gpa", "semester_status")
+    list_display = ("id", "student", "semester", "gpa", "semester_status")
     search_fields = ("student__user__username", "semester__academic_year")
     list_filter = ("semester_status",)
 

@@ -116,7 +116,8 @@ class Student(models.Model):
     def get_remaining_half_years(self):
         return self.allowed_half_years - StudentSemester.get_no_of_used_half_years(self)
 
-    def calc_gpa(self): ...
+    def calc_gpa(self):
+        return StudentSemester.get_total_gpa(self)
 
     @classmethod
     def filter_by_faculty(cls, faculty):
