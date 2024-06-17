@@ -160,6 +160,10 @@ class StudentCourse(models.Model):
             student=student, course_status__in=(StudentCourseStatusChoices.PASSED, StudentCourseStatusChoices.FAILED)
         )
 
+    @classmethod
+    def get_current_semester_student_courses(cls, student) -> models.QuerySet["StudentCourse"]:
+        return cls.objects.filter(student=student, course_status=StudentCourseStatusChoices.STUDYING)
+
 
 class StudentSemester(models.Model):
     class StatusChoices(models.TextChoices):
@@ -215,6 +219,19 @@ class StudentSemester(models.Model):
     def get_total_gpa(cls, student):
         queryset = StudentCourse.get_gpa_student_courses(student=student)
         return StudentSemester.__calculate_gpa(queryset)
+
+    @classmethod
+    def get_student_current_semester_class_sessions(cls, student) -> models.QuerySet["ClassSession"]:
+        queryset = StudentCourse.get_current_semester_student_courses(student=student)
+        queryset = ClassSession.objects.filter(semester_course__in=queryset.values("semester_course"))
+        return queryset
+
+    @classmethod
+    def get_student_current_weekly_schedule(cls, student):
+        queryset = cls.get_student_current_semester_class_sessions(student=student)
+        queryset = queryset.annotate(course_name=F("semester_course__course__name"))
+        queryset = queryset.values("course_name", "day_of_week", "time_block")
+        return queryset
 
 
 class ClassSession(models.Model):
