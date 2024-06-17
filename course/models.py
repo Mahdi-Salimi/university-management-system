@@ -197,14 +197,16 @@ class StudentSemester(models.Model):
 
     @classmethod
     def __calculate_gpa(cls, queryset):  # calculate gpa from queryset
-        queryset = queryset.annotate(num_unit=F("semester_course__course__course_unit"))
         queryset = queryset.annotate(
             total_value=ExpressionWrapper(
-                F("student_grade") * F("num_unit"),
+                F("student_grade") * F("semester_course__course__course_unit"),
                 output_field=DecimalField(max_digits=5, decimal_places=2),
             )
         )
-        queryset = queryset.aggregate(sum_value=Sum("total_value"), sum_units=Sum("num_unit"))
+        queryset = queryset.aggregate(
+            sum_value=Sum("total_value"),
+            sum_units=Sum("semester_course__course__course_unit"),
+        )
         total_units = queryset["sum_units"]
         total_values = queryset["sum_value"]
         gpa = total_values / total_units if total_units else 0
