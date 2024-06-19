@@ -138,6 +138,12 @@ class SemesterCourse(models.Model):
     def __str__(self):
         return f"{self.course} - {self.semester}"
 
+    @classmethod
+    def get_exam_schedule(cls, student, semester):
+        queryset = cls.objects.filter(studentcourse__student=student, semester=semester)
+        data = queryset.values("course__name", "exam_date_time", "exam_place")
+        return data
+
 
 class StudentCourse(models.Model):
     student = models.ForeignKey("user.Student", on_delete=models.CASCADE)
@@ -176,7 +182,7 @@ class StudentSemester(models.Model):
 
     student = models.ForeignKey("user.Student", on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
-    gpa = models.FloatField()
+    gpa = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     semester_status = models.CharField(max_length=3, choices=StatusChoices.choices, default=StatusChoices.ONGOING)
 
     def __str__(self):
@@ -223,14 +229,16 @@ class StudentSemester(models.Model):
         return StudentSemester.__calculate_gpa(queryset)
 
     @classmethod
-    def get_student_current_semester_class_sessions(cls, student) -> models.QuerySet["ClassSession"]:
-        queryset = StudentCourse.get_current_semester_student_courses(student=student)
-        queryset = ClassSession.objects.filter(semester_course__in=queryset.values("semester_course"))
+    def get_student_semester_class_sessions(cls, student, semester) -> models.QuerySet["ClassSession"]:
+        queryset = ClassSession.objects.filter(
+            semester_course__studentcourse__student=student,
+            semester_course__semester=semester,
+        )
         return queryset
 
     @classmethod
-    def get_student_current_weekly_schedule(cls, student):
-        queryset = cls.get_student_current_semester_class_sessions(student=student)
+    def get_student_weekly_schedule(cls, student, semester):
+        queryset = cls.get_student_semester_class_sessions(student, semester)
         queryset = queryset.annotate(course_name=F("semester_course__course__name"))
         queryset = queryset.values("course_name", "day_of_week", "time_block")
         return queryset

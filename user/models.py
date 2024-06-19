@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from rest_framework.authentication import get_user_model
-from course.models import StudentSemester
+from course.models import ClassSession, SemesterCourse, StudentSemester
 from user.validators import phone_validator, national_id_validator
 from utils.models.choices import (
     GenderChoices,
@@ -96,7 +96,7 @@ class Student(models.Model):
         default=StudentStatusChoices.STUDYING,
     )
     allowed_half_years = models.PositiveSmallIntegerField(default=8)
-    gpa = models.DecimalField(max_digits=2, decimal_places=2, null=True, blank=True)
+    gpa = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
 
     class Meta:
         permissions = [
@@ -118,6 +118,12 @@ class Student(models.Model):
 
     def calc_gpa(self):
         return StudentSemester.get_total_gpa(self)
+
+    def get_weekly_schedule(self, semester):
+        return StudentSemester.get_student_weekly_schedule(self, semester)
+
+    def get_exam_schedule(self, semester):
+        return SemesterCourse.get_exam_schedule(self, semester)
 
     @classmethod
     def filter_by_faculty(cls, faculty):
@@ -157,6 +163,12 @@ class Professor(models.Model):
 
     def get_faculty(self):
         return self.field_of_study.faculty_group.faculty
+
+    def get_weekly_schedule(self, semester):
+        queryset = ClassSession.objects.filter(semester_course__professor=self, semester_course__semester=semester)
+        queryset = queryset.annotate(course_name=models.F("semester_course__course_name"))
+        data = queryset.values("course_name", "day_of_week", "time_block")
+        return data
 
     @classmethod
     def filter_by_faculty(cls, faculty):
